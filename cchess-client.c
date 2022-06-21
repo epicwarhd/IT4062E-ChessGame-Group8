@@ -88,8 +88,25 @@ void *on_signal(void *sockfd)
           case '7':
             printf(RED "(out of range)\n" RESET);
             break;
+          case '8':
+            printf(RED "     ↑ ('-' missing)\n" RESET);
+            break;
+          case '9':
+            printf(RED "      ↑ (should be number)\n" RESET);
+            break;
           }
         }
+
+        if (buffer[2] == '1')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "      ↑ (out of range)\n" RESET);
+            break;
+          }
+        }
+
         printf("\nerror %s\n", buffer);
       }
       // Check if it's an informative or error message
@@ -99,7 +116,7 @@ void *on_signal(void *sockfd)
       // Print the board
       system("clear");
 
-      printf("%s\n", buffer);
+      // printf("%s\n", buffer);
       
       if (*player == 1)
       {

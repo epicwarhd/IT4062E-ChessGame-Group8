@@ -41,28 +41,6 @@ static void initialize_board(wchar_t **p_board)
       if (i == 0)
       {
         if (j == 0 || j == 7)
-          p_board[i][j] = white_rook;
-        if (j == 1 || j == 6)
-          p_board[i][j] = white_knight;
-        if (j == 2 || j == 5)
-          p_board[i][j] = white_bishop;
-        if (j == 3)
-          p_board[i][j] = white_queen;
-        if (j == 4)
-          p_board[i][j] = white_king;
-      }
-
-      if (i == 1)
-        p_board[i][j] = white_pawn;
-
-      if (i > 1 && i < 6)
-        p_board[i][j] = 0;
-
-      if (i == 6)
-        p_board[i][j] = black_pawn;
-      if (i == 7)
-      {
-        if (j == 0 || j == 7)
           p_board[i][j] = black_rook;
         if (j == 1 || j == 6)
           p_board[i][j] = black_knight;
@@ -72,6 +50,28 @@ static void initialize_board(wchar_t **p_board)
           p_board[i][j] = black_queen;
         if (j == 4)
           p_board[i][j] = black_king;
+      }
+
+      if (i == 1)
+        p_board[i][j] = black_pawn;
+
+      if (i > 1 && i < 6)
+        p_board[i][j] = 0;
+
+      if (i == 6)
+        p_board[i][j] = white_pawn;
+      if (i == 7)
+      {
+        if (j == 0 || j == 7)
+          p_board[i][j] = white_rook;
+        if (j == 1 || j == 6)
+          p_board[i][j] = white_knight;
+        if (j == 2 || j == 5)
+          p_board[i][j] = white_bishop;
+        if (j == 3)
+          p_board[i][j] = white_queen;
+        if (j == 4)
+          p_board[i][j] = white_king;
       }
     }
   }
@@ -220,21 +220,21 @@ static void print_board_buff_inverted(char *board)
   printf("             └───────────────────┘          \n\n");
   printf("         a   b   c   d   e   f   g   h     \n");
   printf("       ┌───┬───┬───┬───┬───┬───┬───┬───┐   \n");
-  printf("     1 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 8 \n", translate_piece(board[56]), translate_piece(board[57]), translate_piece(board[58]), translate_piece(board[59]), translate_piece(board[60]), translate_piece(board[61]), translate_piece(board[62]), translate_piece(board[63]));
+  printf("     1 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 1 \n", translate_piece(board[56]), translate_piece(board[57]), translate_piece(board[58]), translate_piece(board[59]), translate_piece(board[60]), translate_piece(board[61]), translate_piece(board[62]), translate_piece(board[63]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     2 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 7 \n", translate_piece(board[48]), translate_piece(board[49]), translate_piece(board[50]), translate_piece(board[51]), translate_piece(board[52]), translate_piece(board[53]), translate_piece(board[54]), translate_piece(board[55]));
+  printf("     2 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 2 \n", translate_piece(board[48]), translate_piece(board[49]), translate_piece(board[50]), translate_piece(board[51]), translate_piece(board[52]), translate_piece(board[53]), translate_piece(board[54]), translate_piece(board[55]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     3 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 6 \n", translate_piece(board[40]), translate_piece(board[41]), translate_piece(board[42]), translate_piece(board[43]), translate_piece(board[44]), translate_piece(board[45]), translate_piece(board[46]), translate_piece(board[47]));
+  printf("     3 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 3 \n", translate_piece(board[40]), translate_piece(board[41]), translate_piece(board[42]), translate_piece(board[43]), translate_piece(board[44]), translate_piece(board[45]), translate_piece(board[46]), translate_piece(board[47]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     4 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 5 \n", translate_piece(board[32]), translate_piece(board[33]), translate_piece(board[34]), translate_piece(board[35]), translate_piece(board[36]), translate_piece(board[37]), translate_piece(board[38]), translate_piece(board[39]));
+  printf("     4 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 4 \n", translate_piece(board[32]), translate_piece(board[33]), translate_piece(board[34]), translate_piece(board[35]), translate_piece(board[36]), translate_piece(board[37]), translate_piece(board[38]), translate_piece(board[39]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     5 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 4 \n", translate_piece(board[24]), translate_piece(board[25]), translate_piece(board[26]), translate_piece(board[27]), translate_piece(board[28]), translate_piece(board[29]), translate_piece(board[30]), translate_piece(board[31]));
+  printf("     5 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 5 \n", translate_piece(board[24]), translate_piece(board[25]), translate_piece(board[26]), translate_piece(board[27]), translate_piece(board[28]), translate_piece(board[29]), translate_piece(board[30]), translate_piece(board[31]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     6 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 3 \n", translate_piece(board[16]), translate_piece(board[17]), translate_piece(board[18]), translate_piece(board[19]), translate_piece(board[20]), translate_piece(board[21]), translate_piece(board[22]), translate_piece(board[23]));
+  printf("     6 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 6 \n", translate_piece(board[16]), translate_piece(board[17]), translate_piece(board[18]), translate_piece(board[19]), translate_piece(board[20]), translate_piece(board[21]), translate_piece(board[22]), translate_piece(board[23]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     7 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 2 \n", translate_piece(board[8]), translate_piece(board[9]), translate_piece(board[10]), translate_piece(board[11]), translate_piece(board[12]), translate_piece(board[13]), translate_piece(board[14]), translate_piece(board[15]));
+  printf("     7 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 7 \n", translate_piece(board[8]), translate_piece(board[9]), translate_piece(board[10]), translate_piece(board[11]), translate_piece(board[12]), translate_piece(board[13]), translate_piece(board[14]), translate_piece(board[15]));
   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-  printf("     8 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 1 \n", translate_piece(board[0]), translate_piece(board[1]), translate_piece(board[2]), translate_piece(board[3]), translate_piece(board[4]), translate_piece(board[5]), translate_piece(board[6]), translate_piece(board[7]));
+  printf("     8 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 8 \n", translate_piece(board[0]), translate_piece(board[1]), translate_piece(board[2]), translate_piece(board[3]), translate_piece(board[4]), translate_piece(board[5]), translate_piece(board[6]), translate_piece(board[7]));
   printf("       └───┴───┴───┴───┴───┴───┴───┴───┘   \n");
   printf("         a   b   c   d   e   f   g   h     \n\n");
 }

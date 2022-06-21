@@ -40,13 +40,15 @@ bool emit(int client, char *message, int message_size)
 
 void translate_to_move(int *move, char *buffer)
 {
-
-  printf("buffer: %s\n", buffer);
-
   *(move) = 8 - (*(buffer + 1) - '0');
   move[1] = (*(buffer) - '0') - 49;
   move[2] = 8 - (*(buffer + 4) - '0');
   move[3] = (*(buffer + 3) - '0') - 49;
+
+  if (*(buffer + 5) == '-')
+  {
+    move[4] = *(buffer + 6) - '0';
+  }
 
   printf("[%d, %d] to [%d, %d]\n", *(move), move[1], move[2], move[3]);
 }
@@ -109,52 +111,73 @@ bool is_diagonal_clear(wchar_t **board, int *move)
   return true;
 }
 
-bool is_syntax_valid(int player, char *move)
+bool is_syntax_valid(int player, char *buffer)
 {
   // Look for -
-  if (move[2] != '-')
+  if (buffer[2] != '-')
   {
     send(player, "e-00", 4, 0);
     return false;
   }
+
   // First and 3th should be characters
-  if (move[0] - '0' < 10)
+  if (buffer[0] - '0' < 10)
   {
     send(player, "e-01", 4, 0);
     return false;
   }
-  if (move[3] - '0' < 10)
+  if (buffer[3] - '0' < 10)
   {
     send(player, "e-02", 4, 0);
     return false;
   }
 
   // Second and 5th character should be numbers
-  if (move[1] - '0' > 10)
+  if (buffer[1] - '0' > 10)
   {
     send(player, "e-03", 4, 0);
     return false;
   }
-  if (move[1] - '0' > 8)
+  if (buffer[1] - '0' > 8)
   {
     send(player, "e-04", 4, 0);
     return false;
   }
-  if (move[4] - '0' > 10)
+  if (buffer[4] - '0' > 10)
   {
     send(player, "e-05", 4, 0);
     return false;
   }
-  if (move[4] - '0' > 8)
+  if (buffer[4] - '0' > 8)
   {
     send(player, "e-06", 4, 0);
     return false;
   }
   // Move out of range
-  if (move[0] - '0' > 56 || move[3] - '0' > 56)
+  if (buffer[0] - '0' > 56 || buffer[3] - '0' > 56)
   {
     send(player, "e-07", 4, 0);
     return false;
+  }
+
+  // Check when promoting pawn
+  if (buffer[5] != 0)
+  {
+    if (buffer[5] != '-')
+    {
+      send(player, "e-08", 4, 0);
+      return false;
+    }
+    if (buffer[6] - '0' > 10)
+    {
+      send(player, "e-09", 4, 0);
+      return false;
+    }
+    if (buffer[6] - '0' < 1 || buffer[6] - '0' > 4)
+    {
+      send(player, "e-10", 4, 0);
+      return false;
+    }
   }
 
   return true;
@@ -177,49 +200,36 @@ int get_piece_team(wchar_t **board, int x, int y)
   switch (board[x][y])
   {
   case white_king:
-    return -1;
+    return 1;
   case white_queen:
-    return -1;
+    return 1;
   case white_rook:
-    return -1;
+    return 1;
   case white_bishop:
-    return -1;
+    return 1;
   case white_knight:
-    return -1;
+    return 1;
   case white_pawn:
-    return -1;
+    return 1;
   case black_king:
-    return 1;
+    return -1;
   case black_queen:
-    return 1;
+    return -1;
   case black_rook:
-    return 1;
+    return -1;
   case black_bishop:
-    return 1;
+    return -1;
   case black_knight:
-    return 1;
+    return -1;
   case black_pawn:
-    return 1;
+    return -1;
   }
 
   return 0;
 }
 
-void promote_piece(wchar_t **board, int destX, int destY, int team)
-{
-  if (team == 1)
-  {
-    board[destX][destY] = black_queen;
-  }
-  else if (team == -1)
-  {
-    board[destX][destY] = white_queen;
-  }
-}
-
 int get_piece_type(wchar_t piece)
 {
-
   switch (piece)
   {
   case white_king:
@@ -247,7 +257,60 @@ int get_piece_type(wchar_t piece)
   case black_pawn:
     return 5;
   }
+
   return -1;
+}
+
+void promote_piece(wchar_t **board, int destX, int destY, int target, int team)
+{
+  wchar_t piece;
+
+  printf("Promoting piece -> %d\n", target);
+
+  if (team == 1)
+  {
+    switch (target)
+    {
+    case 1:
+      piece = white_queen;
+      break;
+    case 2:
+      piece = white_bishop;
+      break;
+    case 3:
+      piece = white_knight;
+      break;
+    case 4:
+      piece = white_rook;
+      break;
+    default:
+      piece = white_queen;
+      break;
+    }
+  }
+  else if (team == -1)
+  {
+    switch (target)
+    {
+    case 1:
+      piece = black_queen;
+      break;
+    case 2:
+      piece = black_bishop;
+      break;
+    case 3:
+      piece = black_knight;
+      break;
+    case 4:
+      piece = black_rook;
+      break;
+    default:
+      piece = black_queen;
+      break;
+    }
+  }
+
+  board[destX][destY] = piece;
 }
 
 bool is_rect(int *move)
@@ -466,22 +529,20 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
   case 5: /* --- ♟ --- */
     if (*piece_team == 1 && move[2] == 0)
     {
-      printf("Promoting piece\n");
-      promote_piece(board, move[2], move[3], *piece_team);
+      promote_piece(board, move[0], move[1], move[4], *piece_team);
       send(player, "i-98", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return true;
     }
     if (*piece_team == -1 && move[2] == 7)
     {
-      printf("Promoting piece\n");
-      promote_piece(board, move[2], move[3], *piece_team);
+      promote_piece(board, move[0], move[1], move[4], *piece_team);
       send(player, "i-98", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return true;
     }
     // Moving in Y axis
-    if (*y_moves != 0)
+    if (*y_moves > 0)
     {
       if (!is_diagonal(*x_moves, *y_moves) || (get_piece_team(board, move[2], move[3]) == 0))
       {
@@ -511,7 +572,19 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       }
       if (*x_moves > 1)
       {
+        send(player, "e-61", 5, 0);
+        freeAll(piece_team, x_moves, y_moves);
+        return false;
+      }
+      if ((*move - move[2] == -1 && *piece_team == 1) || (*move - move[2] == 1 && *piece_team == -1))
+      {
         send(player, "e-62", 5, 0);
+        freeAll(piece_team, x_moves, y_moves);
+        return false;
+      }
+      if (get_piece_team(board, move[2], move[3]) != 0)
+      {
+        send(player, "e-63", 5, 0);
         freeAll(piece_team, x_moves, y_moves);
         return false;
       }
@@ -576,17 +649,18 @@ void *game_room(void *client_socket)
     send(player_two, "i-nm", 4, 0);
 
     // Wait until syntax and move are valid
-    printf("Waiting for move from player one (%d)... sending i\n", player_one);
+    printf("\nWaiting for move from player one (%d)\n", player_one);
 
     while (!syntax_valid || !move_valid)
     {
       bzero(buffer, 64);
 
-      if (read(player_one, buffer, 6) < 0)
+      if ((n = read(player_one, buffer, 8)) < 0)
       {
         perror("ERROR reading from socket");
         exit(1);
       }
+      buffer[n - 1] = 0;
       printf("Player one (%d) move: %s\n", player_one, buffer);
 
       syntax_valid = is_syntax_valid(player_one, buffer);
@@ -613,6 +687,8 @@ void *game_room(void *client_socket)
     // Apply move to board
     move_piece(board, move);
 
+    bzero(move, sizeof(move));
+
     // Send applied move board
     broadcast(board, one_dimension_board, player_one, player_two);
     sleep(1);
@@ -620,17 +696,19 @@ void *game_room(void *client_socket)
     send(player_one, "i-nm", 4, 0);
     send(player_two, "i-tm", 4, 0);
 
-    printf("Waiting for move from player two (%d)\n", player_two);
+    printf("\nWaiting for move from player two (%d)\n", player_two);
 
     while (!syntax_valid || !move_valid)
     {
       bzero(buffer, 64);
 
-      if (read(player_two, buffer, 6) < 0)
+      if ((n = read(player_two, buffer, 8)) < 0)
       {
         perror("ERROR reading from socket");
         exit(1);
       }
+      buffer[n - 1] = 0;
+      printf("Player two (%d) move: %s\n", player_two, buffer);
 
       syntax_valid = is_syntax_valid(player_two, buffer);
 
@@ -654,6 +732,8 @@ void *game_room(void *client_socket)
 
     // Apply move to board
     move_piece(board, move);
+
+    bzero(move, sizeof(move));
 
     // Send applied move board
     broadcast(board, one_dimension_board, player_one, player_two);
