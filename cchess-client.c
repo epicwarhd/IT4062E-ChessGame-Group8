@@ -32,7 +32,7 @@ void *on_signal(void *sockfd)
       exit(1);
     }
 
-    if (buffer[0] == 'i' || buffer[0] == 'e' || buffer[0] == '\0')
+    if (buffer[0] == 'i' || buffer[0] == 'e' || buffer[0] == 'm' || buffer[0] == '\0')
     {
       if (buffer[0] == 'i')
       {
@@ -96,8 +96,7 @@ void *on_signal(void *sockfd)
             break;
           }
         }
-
-        if (buffer[2] == '1')
+        else if (buffer[2] == '1')
         {
           switch (buffer[3])
           {
@@ -107,7 +106,94 @@ void *on_signal(void *sockfd)
           }
         }
 
-        printf("\nerror %s\n", buffer);
+        printf("\n");
+      }
+      else if (buffer[0] == 'm')
+      {
+        // Syntax errors
+        if (buffer[2] == '0')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(no piece is selected)\n" RESET);
+            break;
+          case '1':
+            printf(RED "(can not eat piece of yours)\n" RESET);
+            break;
+          case '2':
+            printf(RED "(can not move piece of your opponent)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '1')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of king)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '2')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of queen)\n" RESET);
+            break;
+          case '1':
+            printf(RED "(rect is not clear)\n" RESET);
+            break;
+          case '2':
+            printf(RED "(diagonal is not clear)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '3')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of rook)\n" RESET);
+            break;
+          case '1':
+            printf(RED "(rect is not clear)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '4')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of bishop)\n" RESET);
+            break;
+          case '1':
+            printf(RED "(diagonal is not clear)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '5')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of knight)\n" RESET);
+            break;
+          }
+        }
+        else if (buffer[2] == '6')
+        {
+          switch (buffer[3])
+          {
+          case '0':
+            printf(RED "(invalid move of pawn)\n" RESET);
+            break;
+          }
+        }
+
+        printf("\n");
       }
       // Check if it's an informative or error message
     }

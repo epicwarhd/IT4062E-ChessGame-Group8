@@ -435,19 +435,19 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
   // General errors
   if (board[*(move)][move[1]] == 0)
   {
-    send(player, "e-08", 4, 0);
+    send(player, "m-00", 4, 0);
     return false;
   } // If selected piece == 0 there's nothing selected
   if (*piece_team == get_piece_team(board, move[2], move[3]))
   {
-    send(player, "e-09", 4, 0);
+    send(player, "m-01", 4, 0);
     return false;
   } // If the origin piece's team == dest piece's team is an invalid move
 
   // Check if user is moving his piece
   if (team != *piece_team)
   {
-    send(player, "e-07", 4, 0);
+    send(player, "m-02", 4, 0);
     return false;
   }
 
@@ -461,7 +461,7 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
   case 0: /* --- ♚ --- */
     if (*x_moves > 1 || *y_moves > 1)
     {
-      send(player, "e-10", 5, 0);
+      send(player, "m-10", 5, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
@@ -472,16 +472,44 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       return true;
     }
     break;
+  case 1: /* --- ♛ --- */
+    if (!is_rect(move) && !is_diagonal(*x_moves, *y_moves))
+    {
+      send(player, "m-20", 5, 0);
+      freeAll(piece_team, x_moves, y_moves);
+      return false;
+    }
+
+    if (is_rect(move) && !is_rect_clear(board, move, *x_moves, *y_moves))
+    {
+      send(player, "m-21", 4, 0);
+      freeAll(piece_team, x_moves, y_moves);
+      return false;
+    }
+
+    if (is_diagonal(*x_moves, *y_moves) && !is_diagonal_clear(board, move))
+    {
+      send(player, "m-22", 4, 0);
+      freeAll(piece_team, x_moves, y_moves);
+      return false;
+    }
+
+    if (eat_piece(board, move[2], move[3]))
+    {
+      send(player, "i-99", 4, 0);
+      freeAll(piece_team, x_moves, y_moves);
+      return true;
+    }
   case 2: /* --- ♜ --- */
     if (!is_rect(move))
     {
-      send(player, "e-30", 5, 0);
+      send(player, "m-30", 5, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
     if (!is_rect_clear(board, move, *x_moves, *y_moves))
     {
-      send(player, "e-31", 4, 0);
+      send(player, "m-31", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
@@ -495,13 +523,13 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
   case 3: /* ––– ♝ ––– */
     if (!is_diagonal(*x_moves, *y_moves))
     {
-      send(player, "e-40", 4, 0);
+      send(player, "m-40", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
-      return false; // Check if it's a valid diagonal move
+      return false;
     }
     if (!is_diagonal_clear(board, move))
     {
-      send(player, "e-41", 4, 0);
+      send(player, "m-41", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
@@ -515,7 +543,7 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
   case 4: /* --- ♞ --- */
     if ((abs(*x_moves) != 1 || abs(*y_moves) != 2) && (abs(*x_moves) != 2 || abs(*y_moves) != 1))
     {
-      send(player, "e-50", 4, 0);
+      send(player, "m-50", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
@@ -541,23 +569,8 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       freeAll(piece_team, x_moves, y_moves);
       return true;
     }
-    // Moving in Y axis
-    if (*y_moves > 0)
-    {
-      if (!is_diagonal(*x_moves, *y_moves) || (get_piece_team(board, move[2], move[3]) == 0))
-      {
-        send(player, "e-60", 4, 0);
-        freeAll(piece_team, x_moves, y_moves);
-        return false; // Check if it's a diagonal move and it's not an empty location
-      }
-      if (eat_piece(board, move[2], move[3]))
-      {
-        send(player, "i-99", 4, 0);
-        freeAll(piece_team, x_moves, y_moves);
-        return true; // Check if there's something to eat
-      }
-    }
-    else
+  
+    if (*y_moves == 0)
     {
       // Check if it's the first move
       if (move[0] == 6 && *piece_team == 1 && *x_moves == 2)
@@ -572,21 +585,36 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       }
       if (*x_moves > 1)
       {
-        send(player, "e-61", 5, 0);
+        send(player, "m-60", 5, 0);
         freeAll(piece_team, x_moves, y_moves);
         return false;
       }
       if ((*move - move[2] == -1 && *piece_team == 1) || (*move - move[2] == 1 && *piece_team == -1))
       {
-        send(player, "e-62", 5, 0);
+        send(player, "m-60", 5, 0);
         freeAll(piece_team, x_moves, y_moves);
         return false;
       }
       if (get_piece_team(board, move[2], move[3]) != 0)
       {
-        send(player, "e-63", 5, 0);
+        send(player, "m-60", 5, 0);
         freeAll(piece_team, x_moves, y_moves);
         return false;
+      }
+    }
+    else // Moving in Y axis
+    {
+      if (!is_diagonal(*x_moves, *y_moves) || (get_piece_team(board, move[2], move[3]) == 0))
+      {
+        send(player, "m-60", 4, 0);
+        freeAll(piece_team, x_moves, y_moves);
+        return false; // Check if it's a diagonal move and it's not an empty location
+      }
+      if (eat_piece(board, move[2], move[3]))
+      {
+        send(player, "i-99", 4, 0);
+        freeAll(piece_team, x_moves, y_moves);
+        return true; // Check if there's something to eat
       }
     }
     break;
