@@ -103,6 +103,9 @@ void *on_signal(void *sockfd)
           case '0':
             printf(RED "      ↑ (out of range)\n" RESET);
             break;
+          case '1':
+            printf(RED "(syntax error)\n" RESET);
+            break;
           }
         }
 
@@ -119,10 +122,16 @@ void *on_signal(void *sockfd)
             printf(RED "(no piece is selected)\n" RESET);
             break;
           case '1':
-            printf(RED "(can not eat piece of yours)\n" RESET);
+            printf(RED "(can not move piece of your opponent)\n" RESET);
             break;
           case '2':
-            printf(RED "(can not move piece of your opponent)\n" RESET);
+            printf(RED "(can not eat piece of yours)\n" RESET);
+            break;
+          case '3':
+            printf(RED "(you has castled or king/rook has moved)\n" RESET);
+            break;
+          case '4':
+            printf(RED "(spaces between king and rook are not clear)\n" RESET);
             break;
           }
         }

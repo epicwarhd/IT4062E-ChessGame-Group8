@@ -26,13 +26,6 @@ bool is_diagonal(int, int);
 int challenging_player = 0;
 int player_is_waiting = 0;
 
-void move_piece(wchar_t **board, int *move)
-{
-  // Move piece in board from origin to dest
-  board[move[2]][move[3]] = board[*move][move[1]];
-  board[*move][move[1]] = 0;
-}
-
 bool emit(int client, char *message, int message_size)
 {
   return true;
@@ -113,6 +106,12 @@ bool is_diagonal_clear(wchar_t **board, int *move)
 
 bool is_syntax_valid(int player, char *buffer)
 {
+  if (strlen(buffer) < 5)
+  {
+    send(player, "e-11", 4, 0);
+    return false;
+  }
+
   // Look for -
   if (buffer[2] != '-')
   {
@@ -404,6 +403,40 @@ bool is_diagonal(int x_moves, int y_moves)
   return true;
 }
 
+bool is_castling(wchar_t **board, int *move)
+{
+  int p1 = get_piece_type(board[*(move)][move[1]]);
+  int p2 = get_piece_type(board[move[2]][move[3]]);
+  int t1 = get_piece_team(board, *(move), move[1]);
+  int t2 = get_piece_team(board, move[2], move[3]);
+
+  if (t1 == t2)
+  {
+    if (p1 == 0 && p2 == 2 || p1 == 2 && p2 == 0)
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool is_castling_clear(wchar_t **board, int row, int col1, int col2)
+{
+  int max = col1 > col2 ? col1 : col2;
+  int min = col1 + col2 - max;
+
+  for (int i = min + 1; i < max; i++)
+  {
+    if (board[row][i] != 0)
+    {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 int getManitud(int origin, int dest)
 {
   return (abs(origin - dest));
@@ -414,6 +447,42 @@ bool eat_piece(wchar_t **board, int x, int y)
   return (get_piece_team(board, x, y) != 0);
 }
 
+void do_castle(wchar_t **board, int row, int col1, int col2)
+{
+  int min = col1 < col2 ? col1 : col2;
+  int team = get_piece_team(board, row, col1);
+  int y_moves = getManitud(col1, col2);
+
+  wchar_t king = team == 1 ? white_king : black_king;
+  wchar_t rook = team == 1 ? white_rook : black_rook;
+
+  board[row][col1] = 0;
+  board[row][col2] = 0;
+
+  board[row][min + 2] = king;
+  if (y_moves == 3)
+  {
+    board[row][min + 1] = rook;
+  }
+  else if (y_moves == 4)
+  {
+    board[row][min + 3] = rook;
+  }
+}
+
+void move_piece(wchar_t **board, int *move)
+{
+  if (is_castling(board, move))
+  {
+    do_castle(board, *(move), move[1], move[3]);
+    return;
+  }
+
+  // Move piece in board from origin to dest
+  board[move[2]][move[3]] = board[*move][move[1]];
+  board[*move][move[1]] = 0;
+}
+
 void freeAll(int *piece_team, int *x_moves, int *y_moves)
 {
   free(piece_team);
@@ -421,7 +490,7 @@ void freeAll(int *piece_team, int *x_moves, int *y_moves)
   free(y_moves);
 }
 
-bool is_move_valid(wchar_t **board, int player, int team, int *move)
+bool is_move_valid(wchar_t **board, int player, int team, int *move, int *castle)
 {
 
   int *piece_team = (int *)malloc(sizeof(int *));
@@ -438,18 +507,41 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
     send(player, "m-00", 4, 0);
     return false;
   } // If selected piece == 0 there's nothing selected
-  if (*piece_team == get_piece_team(board, move[2], move[3]))
-  {
-    send(player, "m-01", 4, 0);
-    return false;
-  } // If the origin piece's team == dest piece's team is an invalid move
 
   // Check if user is moving his piece
   if (team != *piece_team)
   {
-    send(player, "m-02", 4, 0);
+    send(player, "m-01", 4, 0);
     return false;
   }
+
+  // Check if it is castling
+  if (is_castling(board, move))
+  {
+    // If player has castled or king/rook has moved
+    if (*castle == 0)
+    {
+      send(player, "m-03", 4, 0);
+      return false;
+    }
+
+    // If spaces between are not clear
+    if (is_castling_clear(board, *(move), move[1], move[3]) == 0)
+    {
+      send(player, "m-04", 4, 0);
+      return false;
+    }
+
+    *castle = 0;
+    send(player, "i-97", 4, 0);
+    return true;
+  }
+
+  if (*piece_team == get_piece_team(board, move[2], move[3]))
+  {
+    send(player, "m-02", 4, 0);
+    return false;
+  } // If the origin piece's team == dest piece's team is an invalid move
 
   printf("Player %d(%d) [%d,%d] to [%d,%d]\n", player, *piece_team, move[0], move[1], move[2], move[3]);
 
@@ -465,6 +557,12 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
+
+    if (*castle == 1)
+    {
+      *castle = 0;
+    }
+
     if (eat_piece(board, move[2], move[3]))
     {
       send(player, "i-99", 4, 0);
@@ -500,6 +598,7 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       freeAll(piece_team, x_moves, y_moves);
       return true;
     }
+    break;
   case 2: /* --- ♜ --- */
     if (!is_rect(move))
     {
@@ -507,12 +606,19 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
+
     if (!is_rect_clear(board, move, *x_moves, *y_moves))
     {
       send(player, "m-31", 4, 0);
       freeAll(piece_team, x_moves, y_moves);
       return false;
     }
+
+    if (*castle == 1)
+    {
+      *castle = 0;
+    }
+
     if (eat_piece(board, move[2], move[3]))
     {
       send(player, "i-99", 4, 0);
@@ -569,7 +675,7 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move)
       freeAll(piece_team, x_moves, y_moves);
       return true;
     }
-  
+
     if (*y_moves == 0)
     {
       // Check if it's the first move
@@ -632,7 +738,13 @@ void *game_room(void *client_socket)
   int player_one = *(int *)client_socket;
   int n, player_two;
   char buffer[64];
-  int *move = (int *)malloc(sizeof(int) * 4);
+  int *move = (int *)malloc(sizeof(int) * 5);
+
+  int *castle_1 = (int *)malloc(sizeof(int));
+  *castle_1 = 1;
+
+  int *castle_2 = (int *)malloc(sizeof(int));
+  *castle_2 = 1;
 
   // Create a new board
   wchar_t **board = create_board();
@@ -697,7 +809,7 @@ void *game_room(void *client_socket)
       {
         translate_to_move(move, buffer); // Convert to move
 
-        move_valid = is_move_valid(board, player_one, 1, move);
+        move_valid = is_move_valid(board, player_one, 1, move, castle_1);
       }
       else
       {
@@ -744,7 +856,7 @@ void *game_room(void *client_socket)
       {
         translate_to_move(move, buffer); // Convert to move
 
-        move_valid = is_move_valid(board, player_two, -1, move);
+        move_valid = is_move_valid(board, player_two, -1, move, castle_2);
       }
       else
       {
@@ -770,6 +882,8 @@ void *game_room(void *client_socket)
 
   /* delete board */
   free(move);
+  free(castle_1);
+  free(castle_2);
   free_board(board);
 }
 
