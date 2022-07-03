@@ -20,8 +20,6 @@
 pthread_cond_t player_to_join;
 pthread_mutex_t general_mutex;
 
-bool is_diagonal(int, int);
-
 // Match player
 int challenging_player = 0;
 int player_is_waiting = 0;
@@ -732,6 +730,39 @@ bool is_move_valid(wchar_t **board, int player, int team, int *move, int *castle
   return true;
 }
 
+bool is_game_over(wchar_t **board, int *winner)
+{
+  int white = 0, black = 0;
+
+  for (int i = 0; i < 8; i++)
+  {
+    for (int j = 0; j < 8; j++)
+    {
+      if (board[i][j] == white_king)
+      {
+        white = 1;
+      }
+      if (board[i][j] == black_king)
+      {
+        black = 1;
+      }
+    }
+  }
+
+  if (white == 0)
+  {
+    *winner = -1;
+    return true;
+  }
+  else if (black == 0)
+  {
+    *winner = 1;
+    return true;
+  }
+
+  return false;
+}
+
 void *game_room(void *client_socket)
 {
   /* If connection is established then start communicating */
@@ -742,9 +773,11 @@ void *game_room(void *client_socket)
 
   int *castle_1 = (int *)malloc(sizeof(int));
   *castle_1 = 1;
-
   int *castle_2 = (int *)malloc(sizeof(int));
   *castle_2 = 1;
+
+  int *winner = (int *)malloc(sizeof(int));
+  *winner = 0;
 
   // Create a new board
   wchar_t **board = create_board();
@@ -833,6 +866,12 @@ void *game_room(void *client_socket)
     broadcast(board, one_dimension_board, player_one, player_two);
     sleep(1);
 
+    // Check game is over or not
+    if (is_game_over(board, winner))
+    {
+      break;
+    }
+
     send(player_one, "i-nm", 4, 0);
     send(player_two, "i-tm", 4, 0);
 
@@ -878,13 +917,37 @@ void *game_room(void *client_socket)
     // Send applied move board
     broadcast(board, one_dimension_board, player_one, player_two);
     sleep(1);
+
+    // Check game is over or not
+    if (is_game_over(board, winner))
+    {
+      break;
+    }
   }
 
-  /* delete board */
+  printf("\nWinner: %d\nLoser: %d\n\n", *winner, *winner * -1);
+  if (*winner == 1)
+  {
+    send(player_one, "i-ow", 4, 0);
+    send(player_two, "i-ol", 4, 0);
+  }
+  else
+  {
+    send(player_one, "i-ol", 4, 0);
+    send(player_two, "i-ow", 4, 0);
+  }
+
+  /* delete board and related things */
   free(move);
   free(castle_1);
   free(castle_2);
+  free(winner);
   free_board(board);
+
+  close(player_one);
+  close(player_two);
+
+  // pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])

@@ -56,6 +56,19 @@ void *on_signal(void *sockfd)
             printf("You're whites (%c)\n", buffer[3]);
           }
         }
+        if (buffer[2] == 'o')
+        {
+          if (buffer[3] == 'w')
+          {
+            printf("You WIN! =)\n");
+          }
+          else if (buffer[3] == 'l')
+          {
+            printf("You LOSE! =(\n");
+          }
+
+          break;
+        }
       }
       else if (buffer[0] == 'e')
       {
@@ -225,6 +238,8 @@ void *on_signal(void *sockfd)
 
     bzero(buffer, 64);
   }
+
+  // pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
